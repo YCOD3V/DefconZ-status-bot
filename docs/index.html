@@ -55,6 +55,14 @@
       border: 1px solid rgba(148, 163, 184, 0.25);
     }
 
+    .card h2 {
+      margin: 0.6rem 0 0;
+      font-size: clamp(1rem, 2vw, 1.8rem);
+      font-weight: 700;
+      white-space: nowrap;
+      overflow-x: auto;
+    }
+
     .card.loading {
       text-align: center;
       color: #94a3b8;
@@ -131,6 +139,13 @@
       background: #0ea5e9;
     }
 
+    .logo {
+      display: block;
+      margin: 1.5rem auto 0;
+      max-width: 180px;
+      width: 45%;
+    }
+
     .error {
       color: #f87171;
       text-align: center;
@@ -141,11 +156,12 @@
 <body>
   <main>
     <h1>Estado del Servidor - DefconZ</h1>
-    <p class="description">Datos en vivo obtenidos desde BattleMetrics. Usa <code>?serverId=ID</code> o <code>?search=consulta</code> para personalizar.</p>
+    <p class="description">Datos en vivo obtenidos desde BattleMetrics.</p>
 
     <section id="status" class="card loading">Cargando datos del servidor…</section>
 
     <button type="button" class="refresh" id="refresh">Actualizar ahora</button>
+    <img src="logo2.png" alt="DefconZ" class="logo">
     <footer>
       <span id="updated">Última actualización: --</span><br>
       Fuente: <a href="https://www.battlemetrics.com/" target="_blank" rel="noopener">BattleMetrics</a>
@@ -182,6 +198,7 @@
     function renderServer(serverData) {
       const attrs = serverData.attributes;
       const details = attrs.details || {};
+      const serverName = formatValue(attrs.name, "Servidor sin nombre").replace(/\s*\n\s*/g, " ");
       const statusClass = attrs.status === "online" ? "status-online" : "status-offline";
 
       statusSection.className = "card";
@@ -190,7 +207,7 @@
           <div class="status-chip ${statusClass}">
             <span>${attrs.status ? attrs.status.toUpperCase() : "DESCONOCIDO"}</span>
           </div>
-          <h2>${formatValue(attrs.name, "Servidor sin nombre")}</h2>
+          <h2>${serverName}</h2>
         </div>
         <dl>
           <div>
@@ -203,7 +220,7 @@
           </div>
           <div>
             <dt>Mapa</dt>
-            <dd>${formatValue(details.map, "No informado")}</dd>
+            <dd>${formatValue(details.map, "DeerIsle")}</dd>
           </div>
           <div>
             <dt>Game</dt>
@@ -212,10 +229,6 @@
           <div>
             <dt>Rank</dt>
             <dd>${formatValue(attrs.rank, "-")}</dd>
-          </div>
-          <div>
-            <dt>Último reinicio</dt>
-            <dd>${formatValue(details.lastWipe, "No informado")}</dd>
           </div>
         </dl>
       `;
@@ -246,12 +259,20 @@
       try {
         renderLoading();
         const params = new URLSearchParams(window.location.search);
-        const serverId = params.get("serverId") || DEFAULT_SERVER_ID;
-        const searchQuery = params.get("search");
+        const requestedServerId = params.get("serverId");
+        const serverId = requestedServerId && requestedServerId.trim() !== ""
+          ? requestedServerId.trim()
+          : null;
+        const searchParam = params.get("search");
+        const searchQuery = searchParam && searchParam.trim() !== ""
+          ? searchParam.trim()
+          : null;
 
         const serverData = serverId
           ? await fetchByServerId(serverId)
-          : await fetchBySearch(searchQuery);
+          : searchQuery
+            ? await fetchBySearch(searchQuery)
+            : await fetchByServerId(DEFAULT_SERVER_ID);
 
         renderServer(serverData);
         const timestamp = new Date().toLocaleString("es-CL", {
