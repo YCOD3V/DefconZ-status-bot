@@ -1,0 +1,13 @@
+{
+  "name": "dayz-status-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "dotenv": "^17.2.3",
+    "node-fetch": "^3.3.2"
+  }
+}
