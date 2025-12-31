@@ -5,354 +5,459 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Estado del Servidor - DefconZ</title>
   <style>
-    :root {
-      color-scheme: dark light;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: #111827;
-      color: #f9fafb;
-    }
+      @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Share+Tech+Mono&display=swap");
 
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 2rem;
-      box-sizing: border-box;
-      background: linear-gradient(160deg, #1f2937 0%, #0f172a 100%);
-    }
-
-    main {
-      width: min(760px, 100%);
-      background: rgba(17, 24, 39, 0.7);
-      backdrop-filter: blur(12px);
-      border-radius: 18px;
-      padding: 2.5rem 2rem;
-      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.45);
-    }
-
-    h1 {
-      margin: 0 0 1rem;
-      font-size: clamp(1.8rem, 2.5vw, 2.6rem);
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-align: center;
-    }
-
-    p.description {
-      margin: 0 0 2.25rem;
-      text-align: center;
-      color: #cbd5f5;
-    }
-
-    .card {
-      border-radius: 16px;
-      padding: 1.5rem;
-      background: rgba(30, 41, 59, 0.9);
-      display: grid;
-      gap: 1rem;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-    }
-
-    .card h2 {
-      margin: 0.6rem 0 0;
-      font-size: clamp(1.2rem, 2.4vw, 2rem);
-      font-weight: 700;
-      text-align: center;
-    }
-
-    .copy-button {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.75rem;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      background: rgba(30, 41, 59, 0.6);
-      color: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s ease-in-out, transform 0.1s;
-    }
-
-    .copy-button:hover {
-      background: rgba(59, 130, 246, 0.35);
-      transform: translateY(-1px);
-    }
-
-    .copy-button.copied {
-      background: rgba(34, 197, 94, 0.35);
-      border-color: rgba(74, 222, 128, 0.55);
-      color: #bbf7d0;
-    }
-
-    .card.loading {
-      text-align: center;
-      color: #94a3b8;
-      font-style: italic;
-    }
-
-    .status-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.35rem 0.9rem;
-      border-radius: 999px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .status-online {
-      background: rgba(34, 197, 94, 0.15);
-      color: #4ade80;
-      border: 1px solid rgba(74, 222, 128, 0.35);
-    }
-
-    .status-offline {
-      background: rgba(239, 68, 68, 0.15);
-      color: #f87171;
-      border: 1px solid rgba(248, 113, 113, 0.35);
-    }
-
-    dl {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap: 1.2rem;
-      margin: 0;
-    }
-
-    dt {
-      color: #94a3b8;
-      font-size: 0.85rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-
-    dd {
-      margin: 0.15rem 0 0;
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #e2e8f0;
-    }
-
-    footer {
-      margin-top: 2.5rem;
-      text-align: center;
-      color: #64748b;
-      font-size: 0.9rem;
-    }
-
-    button.refresh {
-      margin: 0 auto;
-      display: block;
-      padding: 0.65rem 1.4rem;
-      border-radius: 999px;
-      border: none;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      cursor: pointer;
-      background: #38bdf8;
-      color: #0f172a;
-      transition: transform 0.1s ease-in-out, background 0.2s;
-    }
-
-    button.refresh:hover {
-      transform: translateY(-1px);
-      background: #0ea5e9;
-    }
-
-    .logo {
-      display: block;
-      margin: 1.5rem auto 0;
-      max-width: 180px;
-      width: 45%;
-    }
-
-    .error {
-      color: #f87171;
-      text-align: center;
-      font-weight: 600;
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <h1>Estado del Servidor - DefconZ</h1>
-
-    <section id="status" class="card loading">Cargando datos del servidor…</section>
-
-    <button type="button" class="refresh" id="refresh">Actualizar ahora</button>
-    <img src="logo2.png" alt="DefconZ" class="logo">
-    <footer>
-      <span id="updated">Última actualización: --</span><br>
-      Fuente: <a href="https://www.battlemetrics.com/" target="_blank" rel="noopener">BattleMetrics</a>
-    </footer>
-  </main>
-
-  <script>
-    const API_BASE = "https://api.battlemetrics.com/servers";
-    const DEFAULT_SERVER_ID = "33716617";
-    const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
-
-    const statusSection = document.getElementById("status");
-    const updatedLabel = document.getElementById("updated");
-    const refreshButton = document.getElementById("refresh");
-
-    // Small helper to normalize optional values so the UI stays clean.
-    function formatValue(value, fallback = "-") {
-      if (value === null || value === undefined || value === "") {
-        return fallback;
+      :root {
+        color-scheme: dark;
+        --bg: #0b0d10;
+        --panel: #12151c;
+        --panel-soft: #1a1f2b;
+        --accent: #e54646;
+        --accent-soft: #ff6b3d;
+        --success: #3bd66f;
+        --text: #e6e8ef;
+        --muted: #9aa0ad;
+        --border: rgba(255, 255, 255, 0.08);
+        --glow: rgba(229, 70, 70, 0.35);
+        --font-sans: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+        --font-mono: "Share Tech Mono", "Space Mono", monospace;
       }
-      return value;
-    }
 
-    function renderLoading() {
-      statusSection.className = "card loading";
-      statusSection.textContent = "Actualizando datos…";
-    }
-
-    function renderError(message) {
-      statusSection.className = "card";
-      statusSection.innerHTML = `<div class="error">${message}</div>`;
-    }
-
-    function renderServer(serverData) {
-      const attrs = serverData.attributes;
-      const details = attrs.details || {};
-      const serverName = formatValue(attrs.name, "Servidor sin nombre")
-        .replace(/\s*\n\s*/g, " ")
-        .replace(/\s*\|\s*/g, " | ");
-      const statusClass = attrs.status === "online" ? "status-online" : "status-offline";
-      const formattedIp = formatValue(attrs.ip, "N/D");
-      const formattedPort = formatValue(attrs.port, "-");
-      const address = `${String(formattedIp).trim()}:${String(formattedPort).trim()}`;
-      const gameIdRaw = serverData.relationships?.game?.data?.id;
-      const formattedGame = formatValue(gameIdRaw, "DayZ");
-      const displayGame = typeof formattedGame === "string" && formattedGame.toLowerCase() === "dayz"
-        ? "DayZ"
-        : formattedGame;
-
-      statusSection.className = "card";
-      statusSection.innerHTML = `
-        <div>
-          <div class="status-chip ${statusClass}">
-            <span>${attrs.status ? attrs.status.toUpperCase() : "DESCONOCIDO"}</span>
-          </div>
-          <h2>${serverName}</h2>
-        </div>
-        <dl>
-          <div>
-            <dt>Jugadores</dt>
-            <dd>${formatValue(attrs.players, 0)} / ${formatValue(attrs.maxPlayers, "?")}</dd>
-          </div>
-          <div>
-            <dt>Dirección IP</dt>
-            <dd>
-              <button type="button" class="copy-button" data-copy="${address}">
-                ${address}
-              </button>
-            </dd>
-          </div>
-          <div>
-            <dt>Mapa</dt>
-            <dd>${formatValue(details.map, "DeerIsle")}</dd>
-          </div>
-          <div>
-            <dt>Game</dt>
-            <dd>${displayGame}</dd>
-          </div>
-          <div>
-            <dt>Rank</dt>
-            <dd>${formatValue(attrs.rank, "-")}</dd>
-          </div>
-        </dl>
-      `;
-    }
-
-    async function fetchByServerId(serverId) {
-      const response = await fetch(`${API_BASE}/${encodeURIComponent(serverId)}`);
-      if (!response.ok) {
-        throw new Error("No se pudo cargar el servidor.");
+      * {
+        box-sizing: border-box;
       }
-      const json = await response.json();
-      return json.data;
-    }
 
-    async function fetchBySearch(query) {
-      const response = await fetch(`${API_BASE}?filter[search]=${encodeURIComponent(query)}`);
-      if (!response.ok) {
-        throw new Error("No se pudo realizar la búsqueda en BattleMetrics.");
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: clamp(1.5rem, 5vw, 3.5rem);
+        background: radial-gradient(circle at 20% 20%, rgba(229, 70, 70, 0.05), transparent 32%),
+          radial-gradient(circle at 78% 12%, rgba(255, 107, 61, 0.08), transparent 28%),
+          var(--bg);
+        color: var(--text);
+        font-family: var(--font-sans);
       }
-      const json = await response.json();
-      if (!json.data || json.data.length === 0) {
-        throw new Error("No se encontraron servidores con esa búsqueda.");
-      }
-      return json.data[0];
-    }
 
-    async function updateStatus() {
-      try {
-        renderLoading();
-        const params = new URLSearchParams(window.location.search);
-        const requestedServerId = params.get("serverId");
-        const serverId = requestedServerId && requestedServerId.trim() !== ""
-          ? requestedServerId.trim()
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.012) 0,
+            rgba(255, 255, 255, 0.012) 1px,
+            transparent 1px,
+            transparent 4px
+          ),
+          repeating-linear-gradient(
+            0deg,
+            rgba(255, 255, 255, 0.01) 0,
+            rgba(255, 255, 255, 0.01) 1px,
+            transparent 1px,
+            transparent 4px
+          );
+        mix-blend-mode: soft-light;
+        opacity: 0.55;
+        z-index: 0;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        width: min(840px, 100%);
+        padding: clamp(2rem, 5vw, 3rem);
+        border-radius: 22px;
+        border: 1px solid var(--border);
+        background: linear-gradient(135deg, rgba(229, 70, 70, 0.07), rgba(26, 31, 43, 0.92));
+        backdrop-filter: blur(14px);
+        box-shadow: 0 28px 60px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      }
+
+      h1 {
+        margin: 0 0 1.5rem;
+        font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      h1 span {
+        display: inline-block;
+        background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+        -webkit-background-clip: text;
+        color: transparent;
+        text-shadow: 0 12px 32px rgba(229, 70, 70, 0.35);
+      }
+
+      .card {
+        position: relative;
+        border-radius: 18px;
+        padding: clamp(1.35rem, 3vw, 1.9rem);
+        background: rgba(18, 21, 28, 0.88);
+        display: grid;
+        gap: 1.15rem;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: "";
+        position: absolute;
+        inset: -32% -40% auto;
+        height: 200px;
+        background: radial-gradient(circle, var(--glow), transparent 65%);
+        opacity: 0.45;
+        pointer-events: none;
+      }
+
+      .card > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .card h2 {
+        margin: 0.6rem 0 0;
+        font-size: clamp(1.35rem, 2.8vw, 2.05rem);
+        font-weight: 700;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .card.loading {
+        text-align: center;
+        color: var(--muted);
+        font-style: italic;
+      }
+
+      .status-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 1rem;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(26, 31, 43, 0.8);
+      }
+
+      .status-online {
+        background: rgba(59, 214, 111, 0.16);
+        color: #50f5a6;
+        border-color: rgba(80, 245, 166, 0.35);
+      }
+
+      .status-offline {
+        background: rgba(229, 70, 70, 0.2);
+        color: #ff9393;
+        border-color: rgba(229, 70, 70, 0.45);
+      }
+
+      dl {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.35rem;
+        margin: 0;
+      }
+
+      dl div {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+
+      dt {
+        color: var(--muted);
+        font-size: 0.82rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      dd {
+        margin: 0;
+        font-size: 1.35rem;
+        font-weight: 600;
+        color: var(--text);
+        font-family: var(--font-mono);
+      }
+
+      button.refresh {
+        margin: 0 auto;
+        display: block;
+        padding: 0.75rem 2.4rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        cursor: pointer;
+        font-size: 0.95rem;
+        background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+        color: #0b0d10;
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+        box-shadow: 0 20px 40px rgba(229, 70, 70, 0.35);
+      }
+
+      button.refresh:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 26px 48px rgba(229, 70, 70, 0.45);
+      }
+
+      .logo {
+        display: block;
+        margin: clamp(1.4rem, 3vw, 2rem) auto 0;
+        max-width: 190px;
+        width: 46%;
+        filter: drop-shadow(0 14px 32px var(--glow));
+      }
+
+      .copy-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.4rem 0.95rem;
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        background: rgba(26, 31, 43, 0.7);
+        color: var(--text);
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out, transform 0.12s;
+        white-space: nowrap;
+        font-family: var(--font-mono);
+        font-size: 0.95rem;
+      }
+
+      .copy-button:hover {
+        background: rgba(229, 70, 70, 0.24);
+        transform: translateY(-1px);
+      }
+
+      .copy-button.copied {
+        background: rgba(59, 214, 111, 0.24);
+        border-color: rgba(59, 214, 111, 0.45);
+        color: #d9ffe8;
+      }
+
+      .error {
+        color: #ff8c8c;
+        text-align: center;
+        font-weight: 600;
+      }
+
+      footer {
+        margin-top: clamp(1.8rem, 3.5vw, 2.5rem);
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      footer a {
+        color: var(--accent-soft);
+        font-weight: 600;
+      }
+
+      @media (max-width: 600px) {
+        main {
+          padding: 2rem 1.4rem;
+        }
+
+        dl {
+          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        }
+
+        h1 {
+          letter-spacing: 0.05em;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Estado del Servidor - <span>DefconZ</span></h1>
+
+      <section id="status" class="card loading">Cargando datos del servidor…</section>
+
+      <button type="button" class="refresh" id="refresh">Actualizar ahora</button>
+      <img src="logo2.png" alt="DefconZ" class="logo">
+
+      <footer>
+        <span id="updated">Última actualización: --</span><br>
+        Fuente: <a href="https://www.battlemetrics.com/" target="_blank" rel="noopener">BattleMetrics</a>
+      </footer>
+    </main>
+
+    <script>
+      const API_BASE = "https://api.battlemetrics.com/servers";
+      const DEFAULT_SERVER_ID = "33716617";
+      const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
+      const statusSection = document.getElementById("status");
+      const updatedLabel = document.getElementById("updated");
+      const refreshButton = document.getElementById("refresh");
+
+      // Small helper to normalize optional values so the UI stays clean.
+      function formatValue(value, fallback = "-") {
+        if (value === null || value === undefined || value === "") {
+          return fallback;
+        }
+        return value;
+      }
+
+      function renderLoading() {
+        statusSection.className = "card loading";
+        statusSection.textContent = "Actualizando datos…";
+      }
+
+      function renderError(message) {
+        statusSection.className = "card";
+        statusSection.innerHTML = `<div class="error">${message}</div>`;
+      }
+
+      function renderServer(serverData) {
+        const attrs = serverData.attributes;
+        const details = attrs.details || {};
+        const serverName = formatValue(attrs.name, "Servidor sin nombre")
+          .replace(/\s*\n\s*/g, " ")
+          .replace(/\s*\|\s*/g, " | ");
+        const statusClass = attrs.status === "online" ? "status-online" : "status-offline";
+        const formattedIp = formatValue(attrs.ip, "N/D");
+        const formattedPort = formatValue(attrs.port, "-");
+        const address = `${String(formattedIp).trim()}:${String(formattedPort).trim()}`;
+        const gameIdRaw = serverData.relationships?.game?.data?.id;
+        const formattedGame = formatValue(gameIdRaw, "DayZ");
+        const displayGame = typeof formattedGame === "string" && formattedGame.toLowerCase() === "dayz"
+          ? "DayZ"
+          : formattedGame;
+
+        statusSection.className = "card";
+        statusSection.innerHTML = `
+          <div>
+            <div class="status-chip ${statusClass}">
+              <span>${attrs.status ? attrs.status.toUpperCase() : "DESCONOCIDO"}</span>
+            </div>
+            <h2>${serverName}</h2>
+          </div>
+          <dl>
+            <div>
+              <dt>Jugadores</dt>
+              <dd>${formatValue(attrs.players, 0)} / ${formatValue(attrs.maxPlayers, "?")}</dd>
+            </div>
+            <div>
+              <dt>Dirección IP</dt>
+              <dd>
+                <button type="button" class="copy-button" data-copy="${address}">
+                  ${address}
+                </button>
+              </dd>
+            </div>
+            <div>
+              <dt>Mapa</dt>
+              <dd>${formatValue(details.map, "DeerIsle")}</dd>
+            </div>
+            <div>
+              <dt>Game</dt>
+              <dd>${displayGame}</dd>
+            </div>
+            <div>
+              <dt>Rank</dt>
+              <dd>${formatValue(attrs.rank, "-")}</dd>
+            </div>
+          </dl>
+        `;
+      }
+
+      async function fetchByServerId(serverId) {
+        const response = await fetch(`${API_BASE}/${encodeURIComponent(serverId)}`);
+        if (!response.ok) {
+          throw new Error("No se pudo cargar el servidor.");
+        }
+        const json = await response.json();
+        return json.data;
+      }
+
+      async function fetchBySearch(query) {
+        const response = await fetch(`${API_BASE}?filter[search]=${encodeURIComponent(query)}`);
+        if (!response.ok) {
+          throw new Error("No se pudo realizar la búsqueda en BattleMetrics.");
+        }
+        const json = await response.json();
+        if (!json.data || json.data.length === 0) {
+          throw new Error("No se encontraron servidores con esa búsqueda.");
+        }
+        return json.data[0];
+      }
+
+      async function updateStatus() {
+        try {
+          renderLoading();
+          const params = new URLSearchParams(window.location.search);
+          const requestedServerId = params.get("serverId");
+          const serverId = requestedServerId && requestedServerId.trim() !== ""
+            ? requestedServerId.trim()
+            : null;
+          const searchParam = params.get("search");
+          const searchQuery = searchParam && searchParam.trim() !== ""
+            ? searchParam.trim()
+            : null;
+
+          const serverData = serverId
+            ? await fetchByServerId(serverId)
+            : searchQuery
+              ? await fetchBySearch(searchQuery)
+              : await fetchByServerId(DEFAULT_SERVER_ID);
+
+          renderServer(serverData);
+          const timestamp = new Date().toLocaleString("es-CL", {
+            hour12: false,
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            day: "2-digit",
+            month: "2-digit"
+          });
+          updatedLabel.textContent = `Última actualización: ${timestamp}`;
+        } catch (error) {
+          renderError(error.message || "Error inesperado al cargar el estado.");
+        }
+      }
+
+      refreshButton.addEventListener("click", updateStatus);
+      statusSection.addEventListener("click", async (event) => {
+        const target = event.target instanceof HTMLElement
+          ? event.target.closest(".copy-button")
           : null;
-        const searchParam = params.get("search");
-        const searchQuery = searchParam && searchParam.trim() !== ""
-          ? searchParam.trim()
-          : null;
 
-        const serverData = serverId
-          ? await fetchByServerId(serverId)
-          : searchQuery
-            ? await fetchBySearch(searchQuery)
-            : await fetchByServerId(DEFAULT_SERVER_ID);
+        if (!(target instanceof HTMLButtonElement)) {
+          return;
+        }
 
-        renderServer(serverData);
-        const timestamp = new Date().toLocaleString("es-CL", {
-          hour12: false,
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          day: "2-digit",
-          month: "2-digit"
-        });
-        updatedLabel.textContent = `Última actualización: ${timestamp}`;
-      } catch (error) {
-        renderError(error.message || "Error inesperado al cargar el estado.");
-      }
-    }
+        const value = target.getAttribute("data-copy") || "";
+        try {
+          await navigator.clipboard.writeText(value);
+          const originalLabel = target.getAttribute("data-label") || target.textContent?.trim() || value;
+          target.setAttribute("data-label", originalLabel);
+          target.textContent = "Copiado";
+          target.classList.add("copied");
+          setTimeout(() => {
+            target.textContent = target.getAttribute("data-label") || value;
+            target.classList.remove("copied");
+          }, 1500);
+        } catch (error) {
+          target.classList.add("error");
+        }
+      });
 
-    refreshButton.addEventListener("click", updateStatus);
-    statusSection.addEventListener("click", async (event) => {
-      const target = event.target instanceof HTMLElement
-        ? event.target.closest(".copy-button")
-        : null;
-
-      if (!(target instanceof HTMLButtonElement)) {
-        return;
-      }
-
-      const value = target.getAttribute("data-copy") || "";
-      try {
-        await navigator.clipboard.writeText(value);
-        const originalLabel = target.getAttribute("data-label") || target.textContent?.trim() || value;
-        target.setAttribute("data-label", originalLabel);
-        target.textContent = "Copiado";
-        target.classList.add("copied");
-        setTimeout(() => {
-          target.textContent = target.getAttribute("data-label") || value;
-          target.classList.remove("copied");
-        }, 1500);
-      } catch (error) {
-        target.classList.add("error");
-      }
-    });
-    updateStatus();
-    setInterval(updateStatus, REFRESH_INTERVAL_MS);
-  </script>
-</body>
+      updateStatus();
+      setInterval(updateStatus, REFRESH_INTERVAL_MS);
+    </script>
+  </body>
 </html>
