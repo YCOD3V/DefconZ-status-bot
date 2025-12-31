@@ -63,6 +63,31 @@
       overflow-x: auto;
     }
 
+    .copy-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(30, 41, 59, 0.6);
+      color: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease-in-out, transform 0.1s;
+    }
+
+    .copy-button:hover {
+      background: rgba(59, 130, 246, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .copy-button.copied {
+      background: rgba(34, 197, 94, 0.35);
+      border-color: rgba(74, 222, 128, 0.55);
+      color: #bbf7d0;
+    }
+
     .card.loading {
       text-align: center;
       color: #94a3b8;
@@ -200,6 +225,12 @@
       const details = attrs.details || {};
       const serverName = formatValue(attrs.name, "Servidor sin nombre").replace(/\s*\n\s*/g, " ");
       const statusClass = attrs.status === "online" ? "status-online" : "status-offline";
+      const address = `${formatValue(attrs.ip, "N/D")}:${formatValue(attrs.port, "-")}`;
+      const gameIdRaw = serverData.relationships?.game?.data?.id;
+      const formattedGame = formatValue(gameIdRaw, "DayZ");
+      const displayGame = typeof formattedGame === "string" && formattedGame.toLowerCase() === "dayz"
+        ? "DayZ"
+        : formattedGame;
 
       statusSection.className = "card";
       statusSection.innerHTML = `
@@ -215,8 +246,12 @@
             <dd>${formatValue(attrs.players, 0)} / ${formatValue(attrs.maxPlayers, "?")}</dd>
           </div>
           <div>
-            <dt>Dirección</dt>
-            <dd>${formatValue(attrs.ip, "N/D")}:${formatValue(attrs.port, "-")}</dd>
+            <dt>Dirección IP</dt>
+            <dd>
+              <button type="button" class="copy-button" data-copy="${address}">
+                ${address}
+              </button>
+            </dd>
           </div>
           <div>
             <dt>Mapa</dt>
@@ -224,7 +259,7 @@
           </div>
           <div>
             <dt>Game</dt>
-            <dd>${formatValue(serverData.relationships?.game?.data?.id, "Desconocido")}</dd>
+            <dd>${displayGame}</dd>
           </div>
           <div>
             <dt>Rank</dt>
@@ -290,6 +325,30 @@
     }
 
     refreshButton.addEventListener("click", updateStatus);
+    statusSection.addEventListener("click", async (event) => {
+      const target = event.target instanceof HTMLElement
+        ? event.target.closest(".copy-button")
+        : null;
+
+      if (!(target instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const value = target.getAttribute("data-copy") || "";
+      try {
+        await navigator.clipboard.writeText(value);
+        const originalLabel = target.getAttribute("data-label") || target.textContent?.trim() || value;
+        target.setAttribute("data-label", originalLabel);
+        target.textContent = "Copiado";
+        target.classList.add("copied");
+        setTimeout(() => {
+          target.textContent = target.getAttribute("data-label") || value;
+          target.classList.remove("copied");
+        }, 1500);
+      } catch (error) {
+        target.classList.add("error");
+      }
+    });
     updateStatus();
     setInterval(updateStatus, REFRESH_INTERVAL_MS);
   </script>
